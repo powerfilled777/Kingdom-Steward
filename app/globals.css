@@ -1,0 +1,55 @@
+"use client";
+
+import { FormEvent, useState } from "react";
+import { supabase } from "@/lib/supabase";
+
+export default function Home() {
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [message, setMessage] = useState("");
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const email = String(form.get("email") || "");
+    const password = String(form.get("password") || "");
+    const fullName = String(form.get("fullName") || "");
+
+    if (mode === "signup") {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { full_name: fullName } }
+      });
+      setMessage(error ? error.message : "Check your email to confirm your account.");
+    } else {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) setMessage(error.message);
+      else window.location.href = "/dashboard";
+    }
+  }
+
+  return (
+    <main className="authPage">
+      <section className="authCard">
+        <div className="logo">KS</div>
+        <p className="eyebrow">FAITH • WISDOM • PURPOSE</p>
+        <h1>Kingdom Steward</h1>
+        <p>Faithful with today. Prepared for tomorrow.</p>
+
+        <div className="authTabs">
+          <button className={mode === "signin" ? "active" : ""} onClick={() => setMode("signin")}>Sign In</button>
+          <button className={mode === "signup" ? "active" : ""} onClick={() => setMode("signup")}>Create Account</button>
+        </div>
+
+        <form onSubmit={submit}>
+          {mode === "signup" && <label>Full name<input name="fullName" required /></label>}
+          <label>Email<input name="email" type="email" required /></label>
+          <label>Password<input name="password" type="password" minLength={8} required /></label>
+          <button className="primary">{mode === "signin" ? "Sign In" : "Create Account"}</button>
+        </form>
+
+        {message && <p className="message">{message}</p>}
+      </section>
+    </main>
+  );
+}
